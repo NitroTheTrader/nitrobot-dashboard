@@ -2,55 +2,36 @@ import streamlit as st
 import subprocess
 import os
 import pandas as pd
-import time
 import requests
 
-# Set up page
 st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
 
-# Session state setup
 if "bot_running" not in st.session_state:
     st.session_state.bot_running = False
 
-# Sidebar controls
-mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
-st.sidebar.write("Trading Mode:", mode)
+st.title("🧠 NitroBot AI Trading Dashboard")
+st.markdown("---")
 
-st.title("📊 NitroBot Dashboard")
-st.subheader("💰 Live Price Tracker")
-
-
-# ✅ Working BTC/USDT price fetcher
+# 🔁 Live Price from CoinMarketCap (more stable if you use an API key)
 def fetch_price():
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(
-            "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
-            headers=headers,
-            timeout=10
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return float(data["price"])
-        else:
-            print("⚠️ Binance API error:", response.status_code, response.text)
-            return None
+        url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        return float(data["price"])
     except Exception as e:
-        print("❌ Exception fetching price:", e)
+        print("❌ Price fetch error:", e)
         return None
 
-
-# Display price safely
 price = fetch_price()
-if price is not None:
-    st.metric("BTC/USDT Price", f"${price:,.2f}")
+if price:
+    st.metric("BTC/USDT", f"${price:,.2f}")
 else:
-    st.metric("BTC/USDT Price", "Fetching price...")
+    st.metric("BTC/USDT", "Unavailable")
 
+st.markdown("### 📈 Profit Tracker")
 
-# 📈 Profit Tracker
-st.subheader("📈 Profit Tracker")
-
+# Profit Tracker
 if os.path.exists("trade_log.csv"):
     df = pd.read_csv("trade_log.csv")
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
@@ -62,23 +43,26 @@ else:
     df = pd.DataFrame(columns=["type", "price", "amount"])
     realized_profit = 0.00
 
-st.metric("Realized PnL", f"${realized_profit:,.2f}")
-st.dataframe(df)
+st.metric("Realized Profit", f"${realized_profit:,.2f}")
+st.dataframe(df, use_container_width=True)
 
+st.markdown("### 🤖 Bot Control")
 
-# 🕹️ Bot Controls
-st.subheader("🕹️ Bot Control")
+# Bot control
+col1, col2 = st.columns(2)
 
-if st.button("🚀 Start NitroBot"):
-    if not st.session_state.bot_running:
-        st.session_state.process = subprocess.Popen(["python3", "nitrobot.py"])
-        st.session_state.bot_running = True
-        st.success("NitroBot started!")
+with col1:
+    if st.button("🚀 Start NitroBot"):
+        if not st.session_state.bot_running:
+            st.session_state.process = subprocess.Popen(["python3", "nitrobot.py"])
+            st.session_state.bot_running = True
+            st.success("NitroBot started!")
 
-if st.button("🛑 Stop NitroBot"):
-    if st.session_state.bot_running:
-        st.session_state.process.terminate()
-        st.session_state.bot_running = False
-        st.warning("NitroBot stopped!")
+with col2:
+    if st.button("🛑 Stop NitroBot"):
+        if st.session_state.bot_running:
+            st.session_state.process.terminate()
+            st.session_state.bot_running = False
+            st.warning("NitroBot stopped!")
 
 st.write("Bot status:", "🟢 Running" if st.session_state.bot_running else "🔴 Stopped")
