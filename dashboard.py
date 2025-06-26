@@ -4,34 +4,42 @@ import os
 import pandas as pd
 import requests
 
+# Layout
 st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
 
 if "bot_running" not in st.session_state:
     st.session_state.bot_running = False
 
-st.title("🧠 NitroBot AI Trading Dashboard")
+# Sidebar
+mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
+st.sidebar.write("Trading Mode:", mode)
+
+# Header
+st.title("📊 NitroBot Dashboard")
 st.markdown("---")
 
-# 🔁 Live Price from CoinMarketCap (more stable if you use an API key)
+# ─── LIVE PRICE TRACKER ────────────────────────────────────────
+st.subheader("💰 Live BTC/USDT Price")
+
 def fetch_price():
     try:
-        url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+        url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
         response = requests.get(url, timeout=5)
         data = response.json()
-        return float(data["price"])
+        return float(data["bitcoin"]["usd"])
     except Exception as e:
-        print("❌ Price fetch error:", e)
+        print("❌ CoinGecko API error:", e)
         return None
 
 price = fetch_price()
-if price:
+if price is not None:
     st.metric("BTC/USDT", f"${price:,.2f}")
 else:
     st.metric("BTC/USDT", "Unavailable")
 
-st.markdown("### 📈 Profit Tracker")
+# ─── PROFIT TRACKER ────────────────────────────────────────────
+st.subheader("📈 Realized Profit")
 
-# Profit Tracker
 if os.path.exists("trade_log.csv"):
     df = pd.read_csv("trade_log.csv")
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
@@ -43,14 +51,13 @@ else:
     df = pd.DataFrame(columns=["type", "price", "amount"])
     realized_profit = 0.00
 
-st.metric("Realized Profit", f"${realized_profit:,.2f}")
+st.metric("Realized PnL", f"${realized_profit:,.2f}")
 st.dataframe(df, use_container_width=True)
 
-st.markdown("### 🤖 Bot Control")
+# ─── BOT CONTROL ───────────────────────────────────────────────
+st.subheader("🤖 NitroBot Control")
 
-# Bot control
 col1, col2 = st.columns(2)
-
 with col1:
     if st.button("🚀 Start NitroBot"):
         if not st.session_state.bot_running:
