@@ -3,43 +3,47 @@ import subprocess
 import os
 import pandas as pd
 import requests
+import time
 
-# Layout
 st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
 
 if "bot_running" not in st.session_state:
     st.session_state.bot_running = False
+if "last_price" not in st.session_state:
+    st.session_state.last_price = None
 
-# Sidebar
+st.title("📊 NitroBot Dashboard")
 mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
 st.sidebar.write("Trading Mode:", mode)
 
-# Header
-st.title("📊 NitroBot Dashboard")
-st.markdown("---")
-
-# ─── LIVE PRICE TRACKER ────────────────────────────────────────
 st.subheader("💰 Live BTC/USDT Price")
 
-def fetch_price():
-    try:
-        url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-        response = requests.get(url, timeout=5)
-        print("🔍 Status Code:", response.status_code)
-        print("🔍 Response Text:", response.text)
-        data = response.json()
-        print("🔍 Parsed JSON:", data)
-        return float(data["bitcoin"]["usd"])
-    except Exception as e:
-        print("❌ CoinGecko API error:", e)
-        return None
+def fetch_price(retries=3, delay=2):
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                price = float(data["bitcoin"]["usd"])
+                st.session_state.last_price = price
+                return price
+            else:
+                print(f"⚠️ Status {response.status_code} on attempt {attempt+1}")
+        except Exception as e:
+            print(f"❌ Error on attempt {attempt+1}: {e}")
+        time.sleep(delay)
+    # Return cached price if API calls all fail
+    return st.session_state.last_price
+
 price = fetch_price()
+
 if price is not None:
     st.metric("BTC/USDT", f"${price:,.2f}")
 else:
     st.metric("BTC/USDT", "Unavailable")
 
-# ─── PROFIT TRACKER ────────────────────────────────────────────
 st.subheader("📈 Realized Profit")
 
 if os.path.exists("trade_log.csv"):
@@ -56,7 +60,6 @@ else:
 st.metric("Realized PnL", f"${realized_profit:,.2f}")
 st.dataframe(df, use_container_width=True)
 
-# ─── BOT CONTROL ───────────────────────────────────────────────
 st.subheader("🤖 NitroBot Control")
 
 col1, col2 = st.columns(2)
