@@ -25,12 +25,14 @@ def fetch_price():
     try:
         url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
         response = requests.get(url, timeout=5)
+        print("🔍 Status Code:", response.status_code)
+        print("🔍 Response Text:", response.text)
         data = response.json()
+        print("🔍 Parsed JSON:", data)
         return float(data["bitcoin"]["usd"])
     except Exception as e:
         print("❌ CoinGecko API error:", e)
         return None
-
 price = fetch_price()
 if price is not None:
     st.metric("BTC/USDT", f"${price:,.2f}")
