@@ -1,14 +1,22 @@
 import streamlit as st
-import time
-import csv
+import subprocess
 import os
+import pandas as pd
+import time
+
+if "bot_running" not in st.session_state:
+    st.session_state.bot_running = False
+
+st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
+
+mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
+st.sidebar.write("Trading Mode:", mode)
+
+st.title("📊 NitroBot Dashboard")
+
+st.subheader("Live Price Tracker")
 import requests
 
-# Set Streamlit page settings
-st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
-st.title("🚀 NitroBot Dashboard")
-
-# --- Fetch Live BTC Price from CoinGecko ---
 def fetch_price(symbol="bitcoin"):
     try:
         response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd")
@@ -17,66 +25,36 @@ def fetch_price(symbol="bitcoin"):
     except Exception as e:
         print("Error fetching price:", e)
         return "Fetching price..."
+st.metric("💰 BTC/USDT Price", f"${fetch_price():,.2f}")
 
-# --- Trade Log File ---
-TRADE_LOG_FILE = "trade_log.csv"
+st.subheader("📈 Profit Tracker")
 
-# --- Load Trade Log ---
-def load_trade_log():
-    trades = []
-    if os.path.exists(TRADE_LOG_FILE):
-        with open(TRADE_LOG_FILE, "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                trades.append(row)
-    return trades
-
-# --- Calculate Realized Profit ---
-def calculate_realized_profit(trades):
-    try:
-        profit = 0.0
-        for trade in trades:
-            if trade["type"] == "BUY":
-                profit -= float(trade["price"]) * float(trade["amount"])
-            elif trade["type"] == "SELL":
-                profit += float(trade["price"]) * float(trade["amount"])
-        return round(profit, 2)
-    except:
-        return 0.0
-
-# --- Sidebar Controls ---
-st.sidebar.header("⚙️ NitroBot Control Panel")
-if "bot_running" not in st.session_state:
-    st.session_state.bot_running = False
-
-# Start/Stop Button
-if st.sidebar.button("▶️ Start Bot"):
-    st.session_state.bot_running = True
-if st.sidebar.button("⏹️ Stop Bot"):
-    st.session_state.bot_running = False
-
-# Demo/Real Mode Toggle
-mode = st.sidebar.radio("Mode:", ["Demo", "Real"])
-st.sidebar.write(f"🔁 Current Mode: **{mode}**")
-st.sidebar.write("---")
-
-# --- Main Dashboard ---
-price = fetch_price()
-st.metric("💰 BTC/USDT Price", f"${price:,.2f}" if isinstance(price, float) else price)
-
-# Load trades and calculate PnL
-trades = load_trade_log()
-realized_profit = calculate_realized_profit(trades)
-st.metric("📈 Realized PnL", f"${realized_profit:,.2f}")
-
-# Show trade history
-st.subheader("📋 Trade History")
-if trades:
-    st.dataframe(trades)
+if os.path.exists("trade_log.csv"):
+    df = pd.read_csv("trade_log.csv")
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+    df.dropna(inplace=True)
+    df["value"] = df["price"] * df["amount"]
+    realized_profit = df["value"].diff().fillna(0).sum()
 else:
-    st.write("No trade history found yet.")
+    df = pd.DataFrame(columns=["type", "price", "amount"])
+    realized_profit = 0.00
 
-# Auto-refresh every 15 seconds
-st.caption("⏱️ Auto-refreshing every 15 seconds...")
-time.sleep(15)
-st.experimental_rerun()
+st.metric("Realized PnL", f"${realized_profit:,.2f}")
+st.dataframe(df)
+
+st.subheader("🕹️ Bot Control")
+
+if st.button("🚀 Start NitroBot"):
+    if not st.session_state.bot_running:
+        st.session_state.process = subprocess.Popen(["python3", "nitrobot.py"])
+        st.session_state.bot_running = True
+        st.success("NitroBot started!")
+
+if st.button("🛑 Stop NitroBot"):
+    if st.session_state.bot_running:
+        st.session_state.process.terminate()
+        st.session_state.bot_running = False
+        st.warning("NitroBot stopped!")
+
+st.write("Bot status:", "🟢 Running" if st.session_state.bot_running else "🔴 Stopped")
