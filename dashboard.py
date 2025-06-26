@@ -26,10 +26,10 @@ def fetch_price(symbol="bitcoin"):
         print("Error fetching price:", e)
         return "Fetching price..."
 price = fetch_price()
-if isinstance(price, (int, float)):
+if price is not None:
     st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
 else:
-    st.metric("💰 BTC/USDT Price", price)
+    st.metric("💰 BTC/USDT Price", "Fetching price...")
 
 st.subheader("📈 Profit Tracker")
 
