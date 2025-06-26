@@ -1,41 +1,47 @@
-
 import streamlit as st
 import pandas as pd
 import requests
-import time
-import os
+import plotly.graph_objects as go
+from datetime import datetime
 
-st.set_page_config(page_title="🚀 NitroBot Live Dashboard", layout="wide")
+st.set_page_config(page_title="NitroBot Pro Dashboard", layout="wide")
 
-st.title("🚀 NitroBot Live Dashboard — BTC/USD & Trade History")
+st.title("🚀 NitroBot Pro Dashboard — Market + Bot Trades")
 
-# Auto-refresh every 30 seconds
-countdown = st.empty()
-st_autorefresh = st.empty()
+# Function to fetch market data from CoinGecko
+@st.cache_data(ttl=900)
+def get_market_data():
+    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+    params = {
+        "vs_currency": "usd",
+        "days": "1",
+        "interval": "minute"
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    return df
 
-def fetch_btc_price():
-    try:
-        url = "https://api.coingecko.com/api/v3/simple/price"
-        params = {"ids": "bitcoin", "vs_currencies": "usd"}
-        response = requests.get(url)
-        data = response.json()
-        return data["bitcoin"]["usd"]
-    except Exception as e:
-        return f"Error: {e}"
+try:
+    df = get_market_data()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df['timestamp'], y=df['price'], mode='lines', name='BTC/USD'))
+    fig.update_layout(title="Bitcoin Market Price (from CoinGecko)", xaxis_title="Time", yaxis_title="Price (USD)", height=400)
+    st.plotly_chart(fig, use_container_width=True)
+except Exception as e:
+    st.error(f"Error fetching market data: {e}")
 
-# Refresh counter
-for i in range(30, 0, -1):
-    btc_price = fetch_btc_price()
-    st.metric(label="💰 Bitcoin (BTC/USD)", value=f"${btc_price}")
-    countdown.markdown(f"🔁 Refreshing in **{i}** seconds...", unsafe_allow_html=True)
-    time.sleep(1)
-    st_autorefresh.empty()
+st.subheader("📈 NitroBot Trades (Demo)")
 
-# Load trade history
-st.subheader("📜 NitroBot Trade Log")
-csv_path = "trades.csv"
-if os.path.exists(csv_path):
-    df = pd.read_csv(csv_path)
-    st.dataframe(df[::-1], use_container_width=True)
-else:
-    st.info("No trades found yet.")
+# Example Trade Data
+trades = [
+    {"time": "2025-06-25 17:00", "type": "BUY", "pair": "BTC/USDT", "price": 61000, "amount": 0.01, "profit": "+$12"},
+    {"time": "2025-06-25 16:45", "type": "SELL", "pair": "BTC/USDT", "price": 61200, "amount": 0.01, "profit": "+$18"},
+]
+
+trade_df = pd.DataFrame(trades)
+st.dataframe(trade_df)
+
+st.sidebar.title("📊 Settings")
+st.sidebar.write("Customize your bot alerts, timeframe, etc.")
