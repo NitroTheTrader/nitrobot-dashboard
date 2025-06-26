@@ -3,43 +3,52 @@ import subprocess
 import os
 import pandas as pd
 import time
+import requests
 
+# Set up page
+st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
+
+# Session state setup
 if "bot_running" not in st.session_state:
     st.session_state.bot_running = False
 
-st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
-
+# Sidebar controls
 mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
 st.sidebar.write("Trading Mode:", mode)
 
 st.title("📊 NitroBot Dashboard")
+st.subheader("💰 Live Price Tracker")
 
-st.subheader("Live Price Tracker")
-import requests
 
+# ✅ Working BTC/USDT price fetcher
 def fetch_price():
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(
             "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
-            headers=headers
+            headers=headers,
+            timeout=10
         )
-        print("🔍 Status code:", response.status_code)
-        print("🔍 Response text:", response.text)
-
-        data = response.json()
-        print("🔍 Parsed JSON:", data)
-
-        return float(data["price"])
+        if response.status_code == 200:
+            data = response.json()
+            return float(data["price"])
+        else:
+            print("⚠️ Binance API error:", response.status_code, response.text)
+            return None
     except Exception as e:
-        print("❌ Error fetching price from Binance:", e)
-        return "Fetching price..."
-price = fetch_price()
+        print("❌ Exception fetching price:", e)
+        return None
 
-if isinstance(price, (int, float)):
-    st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
+
+# Display price safely
+price = fetch_price()
+if price is not None:
+    st.metric("BTC/USDT Price", f"${price:,.2f}")
 else:
-    st.metric("💰 BTC/USDT Price", price)
+    st.metric("BTC/USDT Price", "Fetching price...")
+
+
+# 📈 Profit Tracker
 st.subheader("📈 Profit Tracker")
 
 if os.path.exists("trade_log.csv"):
@@ -56,6 +65,8 @@ else:
 st.metric("Realized PnL", f"${realized_profit:,.2f}")
 st.dataframe(df)
 
+
+# 🕹️ Bot Controls
 st.subheader("🕹️ Bot Control")
 
 if st.button("🚀 Start NitroBot"):
