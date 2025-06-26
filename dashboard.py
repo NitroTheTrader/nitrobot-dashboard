@@ -25,7 +25,11 @@ def fetch_price(symbol="bitcoin"):
     except Exception as e:
         print("Error fetching price:", e)
         return "Fetching price..."
-st.metric("💰 BTC/USDT Price", f"${fetch_price():,.2f}")
+price = fetch_price()
+if isinstance(price, (int, float)):
+    st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
+else:
+    st.metric("💰 BTC/USDT Price", price)
 
 st.subheader("📈 Profit Tracker")
 
