@@ -4,13 +4,29 @@ import os
 import pandas as pd
 import requests
 import time
+import json
 
 st.set_page_config(page_title="NitroBot Dashboard", layout="wide")
 
+CACHE_FILE = "last_price_cache.json"
+
+def save_price_cache(price):
+    try:
+        with open(CACHE_FILE, "w") as f:
+            json.dump({"last_price": price}, f)
+    except Exception as e:
+        print(f"Error saving price cache: {e}")
+
+def load_price_cache():
+    try:
+        with open(CACHE_FILE, "r") as f:
+            data = json.load(f)
+            return data.get("last_price", None)
+    except Exception:
+        return None
+
 if "bot_running" not in st.session_state:
     st.session_state.bot_running = False
-if "last_price" not in st.session_state:
-    st.session_state.last_price = None
 
 st.title("📊 NitroBot Dashboard")
 mode = st.sidebar.selectbox("Mode", ["Demo", "Real"])
@@ -27,15 +43,14 @@ def fetch_price(retries=3, delay=2):
             if response.status_code == 200:
                 data = response.json()
                 price = float(data["bitcoin"]["usd"])
-                st.session_state.last_price = price
+                save_price_cache(price)
                 return price
             else:
                 print(f"⚠️ Status {response.status_code} on attempt {attempt+1}")
         except Exception as e:
             print(f"❌ Error on attempt {attempt+1}: {e}")
         time.sleep(delay)
-    # Return cached price if API calls all fail
-    return st.session_state.last_price
+    return load_price_cache()
 
 price = fetch_price()
 
