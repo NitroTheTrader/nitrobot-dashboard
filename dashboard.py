@@ -17,25 +17,20 @@ st.title("📊 NitroBot Dashboard")
 st.subheader("Live Price Tracker")
 import requests
 
-def fetch_price(symbol="bitcoin"):
+def fetch_price():
     try:
-        response = requests.get(
-            f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd"
-        )
-        print("Response status:", response.status_code)
-        print("Response content:", response.text)
+        response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT")
         data = response.json()
-        return float(data[symbol]['usd'])
+        return float(data["price"])
     except Exception as e:
-        print("Error fetching price:", e)
+        print("❌ Error fetching price from Binance:", e)
         return "Fetching price..."
 price = fetch_price()
 
-# Safely try to format the price if it's a number
 if isinstance(price, (int, float)):
     st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
 else:
-    st.metric("💰 BTC/USDT Price", str(price))  # fallback for string like "Fetching price..."
+    st.metric("💰 BTC/USDT Price", price)
 st.subheader("📈 Profit Tracker")
 
 if os.path.exists("trade_log.csv"):
