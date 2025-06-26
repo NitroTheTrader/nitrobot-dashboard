@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import ccxt
 import plotly.graph_objects as go
 
 st.set_page_config(page_title="📊 NitroBot Pro Dashboard", layout="wide")
