@@ -29,42 +29,43 @@ else:
 st.subheader("📋 NitroBot Trade History")
 try:
     df = pd.read_csv("trade_log.csv")
+    st.dataframe(df[::-1], use_container_width=True)
 
-# Show empty metrics if not enough trades
-if df[df['type'] == 'BUY'].empty or df[df['type'] == 'SELL'].empty:
-    st.subheader("💰 NitroBot Profit Summary")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Realized Profit", "$0.00")
-    col2.metric("Unrealized Profit", "$0.00")
-    col3.metric("📊 Total Profit", "$0.00")
-else:
-    # LIVE PROFIT TRACKER
-    buys = df[df['type'] == 'BUY']
-    sells = df[df['type'] == 'SELL']
+    # Check if enough trades exist
+    if df[df['type'] == 'BUY'].empty or df[df['type'] == 'SELL'].empty:
+        st.subheader("💰 NitroBot Profit Summary")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Realized Profit", "$0.00")
+        col2.metric("Unrealized Profit", "$0.00")
+        col3.metric("📊 Total Profit", "$0.00")
+    else:
+        # Profit calculation
+        buys = df[df['type'] == 'BUY']
+        sells = df[df['type'] == 'SELL']
 
-    realized_profit = 0
-    open_positions = []
+        realized_profit = 0
+        open_positions = []
 
-    for _, row in df.iterrows():
-        if row['type'] == 'BUY':
-            open_positions.append(row)
-        elif row['type'] == 'SELL' and open_positions:
-            buy = open_positions.pop(0)
-            profit = (row['price'] - buy['price']) * row['amount']
-            realized_profit += profit
+        for _, row in df.iterrows():
+            if row['type'] == 'BUY':
+                open_positions.append(row)
+            elif row['type'] == 'SELL' and open_positions:
+                buy = open_positions.pop(0)
+                profit = (row['price'] - buy['price']) * row['amount']
+                realized_profit += profit
 
-    unrealized_profit = 0
-    for pos in open_positions:
-        unrealized_profit += (btc_price - pos['price']) * pos['amount']
+        unrealized_profit = 0
+        for pos in open_positions:
+            unrealized_profit += (btc_price - pos['price']) * pos['amount']
 
-    total_profit = realized_profit + unrealized_profit
+        total_profit = realized_profit + unrealized_profit
 
-    # Show profit summary
-    st.subheader("💰 NitroBot Profit Summary")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Realized Profit", f"${realized_profit:.2f}")
-    col2.metric("Unrealized Profit", f"${unrealized_profit:.2f}")
-    col3.metric("📊 Total Profit", f"${total_profit:.2f}")
+        # Show profit metrics
+        st.subheader("💰 NitroBot Profit Summary")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Realized Profit", f"${realized_profit:.2f}")
+        col2.metric("Unrealized Profit", f"${unrealized_profit:.2f}")
+        col3.metric("📊 Total Profit", f"${total_profit:.2f}")
 
 except FileNotFoundError:
     st.warning("⚠️ trade_log.csv not found. Add some trades to see history.")
