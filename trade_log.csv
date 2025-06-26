@@ -1,4 +1,1 @@
-time,type,pair,price,amount
-2025-06-25 17:00,BUY,BTC/USDT,61000,0.01
-2025-06-25 16:45,SELL,BTC/USDT,61200,0.01
-2025-06-25 16:30,BUY,BTC/USDT,60800,0.01
+type,price,amount
