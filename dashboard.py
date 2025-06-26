@@ -26,14 +26,14 @@ def fetch_price(symbol="bitcoin"):
         return float(data[symbol]['usd'])
     except Exception as e:
         print("Error fetching price:", e)
-        return None
+        return "Fetching price..."  # return a string clearly when it fails
 price = fetch_price()
 
-try:
-    price_float = float(price)
-    st.metric("💰 BTC/USDT Price", f"${price_float:,.2f}")
-except (ValueError, TypeError):
-    st.metric("💰 BTC/USDT Price", "Fetching price...")
+# Safely try to format the price if it's a number
+if isinstance(price, (int, float)):
+    st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
+else:
+    st.metric("💰 BTC/USDT Price", str(price))  # fallback for string like "Fetching price..."
 st.subheader("📈 Profit Tracker")
 
 if os.path.exists("trade_log.csv"):
