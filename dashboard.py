@@ -19,18 +19,21 @@ import requests
 
 def fetch_price(symbol="bitcoin"):
     try:
-        response = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd")
+        response = requests.get(
+            f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd"
+        )
         data = response.json()
-        return data[symbol]['usd']
+        return float(data[symbol]['usd'])
     except Exception as e:
         print("Error fetching price:", e)
-        return "Fetching price..."
+        return None
 price = fetch_price()
-if price is not None:
-    st.metric("💰 BTC/USDT Price", f"${price:,.2f}")
-else:
-    st.metric("💰 BTC/USDT Price", "Fetching price...")
 
+try:
+    price_float = float(price)
+    st.metric("💰 BTC/USDT Price", f"${price_float:,.2f}")
+except (ValueError, TypeError):
+    st.metric("💰 BTC/USDT Price", "Fetching price...")
 st.subheader("📈 Profit Tracker")
 
 if os.path.exists("trade_log.csv"):
