@@ -29,8 +29,15 @@ else:
 st.subheader("📋 NitroBot Trade History")
 try:
     df = pd.read_csv("trade_log.csv")
-    st.dataframe(df[::-1], use_container_width=True)
 
+# Show empty metrics if not enough trades
+if df[df['type'] == 'BUY'].empty or df[df['type'] == 'SELL'].empty:
+    st.subheader("💰 NitroBot Profit Summary")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Realized Profit", "$0.00")
+    col2.metric("Unrealized Profit", "$0.00")
+    col3.metric("📊 Total Profit", "$0.00")
+else:
     # LIVE PROFIT TRACKER
     buys = df[df['type'] == 'BUY']
     sells = df[df['type'] == 'SELL']
