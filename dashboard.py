@@ -34,23 +34,18 @@ st.sidebar.write("Trading Mode:", mode)
 
 st.subheader("💰 Live BTC/USDT Price")
 
-def fetch_price(retries=3, delay=2):
-    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, headers=headers, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                price = float(data["bitcoin"]["usd"])
-                save_price_cache(price)
-                return price
-            else:
-                print(f"⚠️ Status {response.status_code} on attempt {attempt+1}")
-        except Exception as e:
-            print(f"❌ Error on attempt {attempt+1}: {e}")
-        time.sleep(delay)
-    return load_price_cache()
+def fetch_price():
+    try:
+        url = "https://api.coinbase.com/v2/prices/BTC-USD/spot"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=5)
+        data = response.json()
+        price = float(data["data"]["amount"])
+        save_price_cache(price)
+        return price
+    except Exception as e:
+        print("❌ Coinbase API error:", e)
+        return load_price_cache()
 
 price = fetch_price()
 
