@@ -19,8 +19,17 @@ import requests
 
 def fetch_price():
     try:
-        response = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT")
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(
+            "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
+            headers=headers
+        )
+        print("🔍 Status code:", response.status_code)
+        print("🔍 Response text:", response.text)
+
         data = response.json()
+        print("🔍 Parsed JSON:", data)
+
         return float(data["price"])
     except Exception as e:
         print("❌ Error fetching price from Binance:", e)
