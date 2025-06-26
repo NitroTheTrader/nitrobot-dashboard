@@ -5,13 +5,14 @@ import requests
 
 st.set_page_config(page_title="📊 NitroBot Pro Dashboard", layout="wide")
 
-# Load trade data
-try:
-    df = pd.read_csv("trade_log.csv")
-except:
-    st.error("No trade history found.")
+# Sidebar demo/real toggle
+account_type = st.sidebar.radio("Select Account Mode", ["Demo", "Real"])
+st.sidebar.markdown(f"### Currently Viewing: {account_type} Account")
 
-# Get real-time BTC price from CoinGecko
+# Title
+st.title("🚀 NitroBot Pro Dashboard — Live Trades & Market View")
+
+# Fetch BTC price from CoinGecko
 def get_price():
     try:
         r = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
@@ -19,24 +20,32 @@ def get_price():
     except:
         return None
 
-# Layout
-st.title("🚀 NitroBot Pro Dashboard — Market + Bot Trades")
-price = get_price()
-if price:
-    st.metric("📈 BTC/USDT Price", f"${price:,}")
+btc_price = get_price()
+if btc_price:
+    st.metric("📈 BTC/USDT Price", f"${btc_price:,}")
 else:
-    st.error("Error fetching market price")
+    st.error("Error fetching BTC price")
 
-if 'df' in locals():
-    st.subheader("📉 NitroBot Trades")
+# Load and display trade history
+st.subheader("📋 NitroBot Trade History")
+try:
+    df = pd.read_csv("trade_log.csv")
     st.dataframe(df[::-1], use_container_width=True)
 
+    st.subheader("📊 BTC Trade Chart")
     fig = go.Figure()
     fig.add_trace(go.Candlestick(
-        x=df['time'],
-        open=df['price'],
-        high=df['price'] + 50,
-        low=df['price'] - 50,
-        close=df['price']
+        x=pd.to_datetime(df["time"]),
+        open=df["price"],
+        high=df["price"] + 50,
+        low=df["price"] - 50,
+        close=df["price"],
+        name="BTC/USDT"
     ))
+    fig.update_layout(height=400, xaxis_title="Time", yaxis_title="Price (USD)")
     st.plotly_chart(fig, use_container_width=True)
+
+except FileNotFoundError:
+    st.warning("⚠️ trade_log.csv not found. Add some trades to see history.")
+except Exception as e:
+    st.error(f"Error loading trade data: {e}")
