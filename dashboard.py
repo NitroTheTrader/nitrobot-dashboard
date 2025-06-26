@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import requests
 
 st.set_page_config(page_title="📊 NitroBot Pro Dashboard", layout="wide")
@@ -31,20 +30,6 @@ st.subheader("📋 NitroBot Trade History")
 try:
     df = pd.read_csv("trade_log.csv")
     st.dataframe(df[::-1], use_container_width=True)
-
-    st.subheader("📊 BTC Trade Chart")
-    fig = go.Figure()
-    fig.add_trace(go.Candlestick(
-        x=pd.to_datetime(df["time"]),
-        open=df["price"],
-        high=df["price"] + 50,
-        low=df["price"] - 50,
-        close=df["price"],
-        name="BTC/USDT"
-    ))
-    fig.update_layout(height=400, xaxis_title="Time", yaxis_title="Price (USD)")
-    st.plotly_chart(fig, use_container_width=True)
-
 except FileNotFoundError:
     st.warning("⚠️ trade_log.csv not found. Add some trades to see history.")
 except Exception as e:
