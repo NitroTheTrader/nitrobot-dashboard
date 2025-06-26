@@ -22,11 +22,13 @@ def fetch_price(symbol="bitcoin"):
         response = requests.get(
             f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usd"
         )
+        print("Response status:", response.status_code)
+        print("Response content:", response.text)
         data = response.json()
         return float(data[symbol]['usd'])
     except Exception as e:
         print("Error fetching price:", e)
-        return "Fetching price..."  # return a string clearly when it fails
+        return "Fetching price..."
 price = fetch_price()
 
 # Safely try to format the price if it's a number
